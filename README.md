@@ -86,3 +86,38 @@ gas-price-predictor/
 ├── requirements.txt
 ├── .gitignore
 └── README.md
+Setup
+1. Clone the repository
+git clone https://github.com/LucasTonanez/gas-price-predictor.git
+cd gas-price-predictor
+2. Install dependencies
+pip install -r requirements.txt
+3. Create a FRED API key
+Create a .env file in the project root:
+FRED_API_KEY=your_api_key_here
+4. Create the data directory
+mkdir data
+5. Download and engineer the data
+python load_gas_data_api.py
+This creates:
+data/gulf_coast_gas_oil_prices.csv
+6. Train and evaluate
+python train_model.py
+The script reports metrics for both models, identifies the model with the lower test MAE, and prints its next-day gasoline-price prediction.
+Tech Stack
+- Python
+- pandas
+- scikit-learn
+- FRED API
+- Requests
+- python-dotenv
+Future Improvements
+- Time-series cross-validation / walk-forward validation
+- Additional energy and macroeconomic indicators
+- Hyperparameter tuning for Random Forest
+- Feature-importance analysis
+- Gradient-boosting models
+- Prediction-interval / uncertainty estimates
+- Interactive visualization dashboard
+Disclaimer
+This project is an educational machine-learning experiment and is not intended for financial, commodities-trading, or investment decisions.
