@@ -28,27 +28,43 @@ def load_fred_series(series_id, column_name):
     data = response.json()
 
     df = pd.DataFrame(data["observations"])
-
     df = df[["date", "value"]]
     df = df.rename(columns={"value": column_name})
 
     df["date"] = pd.to_datetime(df["date"])
-    df[column_name] = pd.to_numeric(df[column_name], errors="coerce")
+    df[column_name] = pd.to_numeric(
+        df[column_name],
+        errors="coerce",
+    )
 
     df = df.dropna()
 
     return df
 
 
-# Load daily gasoline and crude-oil prices from FRED
-gas_df = load_fred_series("DGASUSGULF", "gas_price")
-oil_df = load_fred_series("DCOILWTICO", "oil_price")
+# --------------------------------------------------
+# Load FRED data
+# --------------------------------------------------
 
-# Keep dates where both series have observations
-df = pd.merge(gas_df, oil_df, on="date", how="inner")
+gas_df = load_fred_series(
+    "DGASUSGULF",
+    "gas_price",
+)
 
-# Use data from 2015 onward
+oil_df = load_fred_series(
+    "DCOILWTICO",
+    "oil_price",
+)
+
+df = pd.merge(
+    gas_df,
+    oil_df,
+    on="date",
+    how="inner",
+)
+
 df = df[df["date"].dt.year >= 2015].copy()
+
 
 # --------------------------------------------------
 # Calendar features
@@ -56,7 +72,12 @@ df = df[df["date"].dt.year >= 2015].copy()
 
 df["year"] = df["date"].dt.year
 df["month"] = df["date"].dt.month
-df["week_of_year"] = df["date"].dt.isocalendar().week.astype(int)
+df["week_of_year"] = (
+    df["date"]
+    .dt.isocalendar()
+    .week
+    .astype(int)
+)
 df["day_of_week"] = df["date"].dt.day_name()
 df["day_of_week_num"] = df["date"].dt.dayofweek
 
@@ -169,14 +190,11 @@ df["oil_diff_from_20_day_avg"] = (
 # Prediction target
 # --------------------------------------------------
 
-# For historical rows, this is the next available gasoline observation.
-# The newest row will intentionally have NaN here because the future
-# value is not known yet.
 df["next_day_gas"] = df["gas_price"].shift(-1)
 
 
 # --------------------------------------------------
-# Remove rows that do not yet have enough history
+# Model features
 # --------------------------------------------------
 
 feature_columns = [
@@ -185,6 +203,11 @@ feature_columns = [
     "week_of_year",
     "day_of_week_num",
 
+    # Current observations
+    "gas_price",
+    "oil_price",
+
+    # Gas history
     "gas_lag_1",
     "gas_lag_2",
     "gas_lag_3",
@@ -202,6 +225,7 @@ feature_columns = [
     "gas_diff_from_10_day_avg",
     "gas_diff_from_20_day_avg",
 
+    # Oil history
     "oil_lag_1",
     "oil_lag_2",
     "oil_lag_3",
@@ -220,22 +244,42 @@ feature_columns = [
     "oil_diff_from_20_day_avg",
 ]
 
-# IMPORTANT:
-# Only drop rows missing FEATURES.
-# Do not drop a row just because next_day_gas is unknown.
-df = df.dropna(subset=feature_columns).copy()
+
+# Only remove rows missing model FEATURES.
+# Keep the newest row even though its future target is unknown.
+df = df.dropna(
+    subset=feature_columns
+).copy()
 
 
 # --------------------------------------------------
-# Save dataset
+# Save
 # --------------------------------------------------
 
-os.makedirs("data", exist_ok=True)
+os.makedirs(
+    "data",
+    exist_ok=True,
+)
 
-output_path = "data/gulf_coast_gas_oil_prices.csv"
+output_path = (
+    "data/gulf_coast_gas_oil_prices.csv"
+)
 
-df.to_csv(output_path, index=False)
+df.to_csv(
+    output_path,
+    index=False,
+)
 
-print(f"Saved {len(df):,} rows to {output_path}")
-print(f"Latest observation date: {df.iloc[-1]['date']}")
-print(f"Latest gasoline price: ${df.iloc[-1]['gas_price']:.4f}")
+print(
+    f"Saved {len(df):,} rows to {output_path}"
+)
+
+print(
+    f"Latest observation date: "
+    f"{df.iloc[-1]['date']}"
+)
+
+print(
+    f"Latest gasoline price: "
+    f"${df.iloc[-1]['gas_price']:.4f}"
+)
