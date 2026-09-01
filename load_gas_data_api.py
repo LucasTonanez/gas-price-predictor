@@ -87,4 +87,5 @@ df["oil_diff_from_20_day_avg"] = df["oil_lag_1"] - df["oil_20_day_avg"]
 
 df = df.dropna()
 
+os.makedirs("data", exist_ok=True)
 df.to_csv("data/gulf_coast_gas_oil_prices.csv", index=False)
