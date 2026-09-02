@@ -2,7 +2,7 @@
 
 Machine-learning pipeline for predicting the next observed daily U.S. Gulf Coast regular gasoline price using historical gasoline and West Texas Intermediate (WTI) crude oil price data.
 
-The project automatically retrieves economic data from the Federal Reserve Economic Data (FRED) API, engineers time-series features, trains multiple regression models, and evaluates their ability to predict the next day's gasoline price.
+The project automatically retrieves economic data from the Federal Reserve Economic Data (FRED) API, engineers time-series features, trains multiple forecasting models, and evaluates their ability to predict the next available gasoline-price observation.
 
 ## Data
 
@@ -146,16 +146,13 @@ pip install -r requirements.txt
 3. Create a FRED API key
 Create a .env file in the project root:
 FRED_API_KEY=your_api_key_here
-4. Create the data directory
-mkdir data
-5. Download and engineer the data
+4. Download and engineer the data
 python load_gas_data_api.py
-This creates:
+This automatically creates the data directory and writes:
 data/gulf_coast_gas_oil_prices.csv
-6. Train and evaluate
+5. Train and evaluate
 python train_model.py
-The script reports metrics for all four approaches, identifies the method with
-the lowest test MAE, and prints its next-observation gasoline-price prediction.
+The script reports metrics for all four approaches, identifies the method with the lowest test MAE, and prints its next-observation gasoline-price prediction.
 ## Tech Stack
 - Python
 - pandas
