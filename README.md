@@ -48,19 +48,38 @@ Features include:
 - 5, 10, and 20-day rolling averages
 - Distance from each rolling average
 
-The prediction target is the gasoline price at the next available observation.
+The prediction target is the change in gasoline price at the next available
+observation:
+
+```text
+next_day_gas - gas_price
+```
+
+The latest feature-complete observation is kept even though its target is not
+yet known, so it can be used for a genuine next-observation forecast.
 
 ## Models
 
-Two regression approaches are currently compared:
+Four forecasting approaches are compared:
+
+### Persistence (Zero-Change) Baseline
+Predicts that the next observed gasoline price will equal the current price,
+which is equivalent to predicting a target change of zero.
 
 ### Linear Regression
-Provides a simple baseline for estimating the relationship between historical gasoline/oil behavior and the next gasoline price.
+Estimates a linear relationship between the engineered features and the next
+observed price change.
+
+### Ridge Regression
+Fits a regularized linear model. Its feature scaler is fitted only on the
+training partition to prevent information from the test period leaking into
+training.
 
 ### Random Forest Regressor
 Uses an ensemble of decision trees to capture nonlinear relationships between the engineered time-series features.
 
-The model with the lower test Mean Absolute Error (MAE) is selected for the final prediction.
+The method with the lowest test Mean Absolute Error (MAE), including the
+persistence baseline, is selected for the final prediction.
 
 ## Evaluation
 
@@ -75,7 +94,38 @@ Models are evaluated using:
 - Mean Squared Error (MSE)
 - Root Mean Squared Error (RMSE)
 
-This avoids allowing future observations to appear in the training set for earlier predictions.
+MAE and RMSE are measured in dollars per gallon. Because MSE squares the
+errors, it is measured in (dollars per gallon)².
+
+No shuffling is used. This prevents future observations from appearing in the
+training set for earlier predictions.
+
+The same chronological holdout is used both to compare methods and to select
+the winner, so these results are not an independent final evaluation of the
+selected method.
+
+### Latest Results
+
+Using FRED data downloaded on September 1, 2026, the labeled observations were
+split as follows:
+
+- Training: 2,312 rows, February 2, 2015 through April 25, 2024
+- Testing: 579 rows, April 26, 2024 through August 24, 2026
+
+Held-out metrics for the next-observation price change use dollars per gallon
+for MAE and RMSE, and (dollars per gallon)² for MSE:
+
+| Method | MAE | MSE | RMSE |
+| --- | ---: | ---: | ---: |
+| Persistence (zero change) | 0.045893 | 0.004453 | 0.066734 |
+| Linear Regression | 0.046758 | 0.004595 | 0.067787 |
+| Ridge Regression | 0.046739 | 0.004591 | 0.067754 |
+| Random Forest | 0.048677 | 0.005079 | 0.071266 |
+
+The persistence baseline had the lowest held-out MAE. None of the three
+machine-learning models beat it on this split. Consequently, the forecast for
+the latest available observation (August 25, 2026, at $3.4290 per gallon) is a
+zero-change prediction of $3.4290 for the next available observation.
 
 ## Project Structure
 
@@ -104,7 +154,8 @@ This creates:
 data/gulf_coast_gas_oil_prices.csv
 6. Train and evaluate
 python train_model.py
-The script reports metrics for both models, identifies the model with the lower test MAE, and prints its next-day gasoline-price prediction.
+The script reports metrics for all four approaches, identifies the method with
+the lowest test MAE, and prints its next-observation gasoline-price prediction.
 ## Tech Stack
 - Python
 - pandas
